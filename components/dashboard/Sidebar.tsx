@@ -1,11 +1,12 @@
 'use client';
 
-import { LayoutDashboard, ReceiptText, Settings, CreditCard } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Settings, CreditCard, Calculator } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Sidebar() {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    { name: 'POS Keypad (PAN)', icon: Calculator, href: '/pos-terminal' },
     { name: 'Transactions', icon: ReceiptText, href: '/transactions' },
     { name: 'Webhook Logs', icon: Settings, href: '/webhook-logs' },
     { name: 'Checkout Preview', icon: CreditCard, href: '/checkout' },
