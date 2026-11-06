@@ -1,0 +1,6 @@
+{
+  "name": "One-Page Checkout App",
+  "description": "A responsive one-page checkout application with integrated Cardlink payment gateway simulation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Merchant": {
+      "title": "Merchant",
+      "description": "Merchant profile and balance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "balance": { "type": "number" }
+      },
+      "required": ["id", "balance"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A financial transaction record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique transaction ID" },
+        "date": { "type": "string", "format": "date-time", "description": "Transaction timestamp" },
+        "amount": { "type": "number", "description": "Transaction amount" },
+        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed"], "description": "Transaction status" },
+        "merchantId": { "type": "string", "description": "ID of the merchant" }
+      },
+      "required": ["id", "date", "amount", "status", "merchantId"]
+    },
+    "WebhookLog": {
+      "title": "WebhookLog",
+      "description": "A record of incoming webhook events.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique log ID" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Event timestamp" },
+        "status": { "type": "string", "enum": ["success", "failure"], "description": "Log status" },
+        "event": { "type": "string", "description": "Event name" },
+        "payload": { "type": "object", "description": "Raw payload" },
+        "error": { "type": "string", "description": "Optional error message" },
+        "merchantId": { "type": "string", "description": "ID of the merchant" }
+      },
+      "required": ["id", "timestamp", "status", "event", "merchantId"]
+    }
+  },
+  "firestore": {
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Stores transaction records."
+    },
+    "/webhook_logs/{logId}": {
+      "schema": "WebhookLog",
+      "description": "Stores webhook callback logs."
+    },
+    "/merchants/{merchantId}": {
+      "schema": "Merchant",
+      "description": "Stores merchant data."
+    }
+  }
+}
