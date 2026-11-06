@@ -9,7 +9,7 @@ import {
   signInWithPopup 
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, CheckCircle2, UserPlus, LogIn } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function LoginPage() {
@@ -21,56 +21,70 @@ export default function LoginPage() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError(null);
     setInfoMessage(null);
 
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/');
+    } catch (err: any) {
+      if (
+        err.code === 'auth/user-not-found' || 
+        err.code === 'auth/invalid-credential' ||
+        err.code === 'auth/wrong-password'
+      ) {
+        try {
+          await createUserWithEmailAndPassword(auth, email, password);
+          setInfoMessage('New account created and signed in successfully!');
+          setTimeout(() => router.push('/'), 600);
+          return;
+        } catch (createErr: any) {
+          setError(createErr.message || 'Authentication failed. Check email & password.');
+        }
+      } else {
+        setError(err.message || 'Failed to sign in.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setInfoMessage(null);
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setInfoMessage('Account created successfully! Redirecting to dashboard...');
+      setTimeout(() => router.push('/'), 600);
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+          router.push('/');
+          return;
+        } catch (signInErr: any) {
+          setError('Account already exists. Please enter your password to sign in.');
+        }
+      } else {
+        setError(err.message || 'Failed to create new account.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (mode === 'signup') {
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        setInfoMessage('Account created successfully!');
-        setTimeout(() => router.push('/'), 600);
-      } catch (err: any) {
-        if (err.code === 'auth/email-already-in-use') {
-          try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push('/');
-            return;
-          } catch (signInErr: any) {
-            setError('Account exists. Please check your password to sign in.');
-          }
-        } else {
-          setError(err.message || 'Failed to create account.');
-        }
-      } finally {
-        setLoading(false);
-      }
+      handleSignUp();
     } else {
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        router.push('/');
-      } catch (err: any) {
-        if (
-          err.code === 'auth/user-not-found' || 
-          err.code === 'auth/invalid-credential' ||
-          err.code === 'auth/wrong-password'
-        ) {
-          try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            setInfoMessage('New account created and signed in successfully!');
-            setTimeout(() => router.push('/'), 600);
-            return;
-          } catch (createErr: any) {
-            setError(createErr.message || 'Authentication failed. Please check credentials.');
-          }
-        } else {
-          setError(err.message || 'Failed to sign in.');
-        }
-      } finally {
-        setLoading(false);
-      }
+      handleSignIn();
     }
   };
 
@@ -104,29 +118,31 @@ export default function LoginPage() {
           <div>
             <h1 className="text-xl font-bold text-slate-900">Merchant Portal</h1>
             <p className="text-xs text-slate-500">
-              {mode === 'signup' ? 'Create a new merchant account' : 'Sign in to access your terminal & webhooks'}
+              {mode === 'signup' ? 'Create a new merchant account' : 'Sign in or register a new merchant account'}
             </p>
           </div>
         </div>
 
-        {/* Mode Selector Tabs */}
+        {/* Mode Selector Header Tabs */}
         <div className="flex p-1 bg-slate-100 rounded-xl mb-6 border border-slate-200">
           <button
             type="button"
             onClick={() => { setMode('signin'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
               mode === 'signin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
+            <LogIn className="w-3.5 h-3.5" />
             Sign In
           </button>
           <button
             type="button"
             onClick={() => { setMode('signup'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
               mode === 'signup' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
+            <UserPlus className="w-3.5 h-3.5" />
             Sign Up
           </button>
         </div>
@@ -145,7 +161,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Merchant Email
@@ -157,7 +173,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 text-slate-900 bg-white"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 text-slate-900 bg-white"
                 placeholder="merchant@example.com"
               />
             </div>
@@ -174,22 +190,37 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 text-slate-900 bg-white"
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 text-slate-900 bg-white"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-slate-900 text-white font-medium py-2.5 rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-          >
-            {loading 
-              ? (mode === 'signup' ? 'Creating Account...' : 'Authenticating...') 
-              : (mode === 'signup' ? 'Create Merchant Account' : 'Sign In to Dashboard')}
-            {!loading && <ArrowRight className="w-4 h-4" />}
-          </button>
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 shadow-sm"
+            >
+              {loading 
+                ? (mode === 'signup' ? 'Creating Account...' : 'Authenticating...') 
+                : (mode === 'signup' ? 'Create New Account' : 'Sign In to Dashboard')}
+              {!loading && <ArrowRight className="w-4 h-4" />}
+            </button>
+
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={handleSignUp}
+                disabled={loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 shadow-sm"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Create New Account (Sign Up)</span>
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="relative my-6">
@@ -205,7 +236,7 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full bg-white border border-slate-300 text-slate-700 font-medium py-2 rounded-lg hover:bg-slate-50 transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full bg-white border border-slate-300 text-slate-700 font-medium py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path
@@ -237,7 +268,7 @@ export default function LoginPage() {
                 onClick={() => { setMode('signup'); setError(null); }} 
                 className="font-semibold text-slate-900 hover:underline"
               >
-                Sign Up
+                Switch to Sign Up Form
               </button>
             </p>
           ) : (
@@ -248,7 +279,7 @@ export default function LoginPage() {
                 onClick={() => { setMode('signin'); setError(null); }} 
                 className="font-semibold text-slate-900 hover:underline"
               >
-                Sign In
+                Switch to Sign In Form
               </button>
             </p>
           )}
