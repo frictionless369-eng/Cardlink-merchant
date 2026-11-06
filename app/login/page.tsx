@@ -13,6 +13,7 @@ import { Lock, Mail, ArrowRight, ShieldCheck, AlertCircle, CheckCircle2 } from '
 import { motion } from 'motion/react';
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('frictionless369@gmail.com');
   const [password, setPassword] = useState('Beyondinfinity604@');
   const [loading, setLoading] = useState(false);
@@ -26,32 +27,50 @@ export default function LoginPage() {
     setError(null);
     setInfoMessage(null);
 
-    try {
-      // Attempt sign in
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
-    } catch (err: any) {
-      // If user doesn't exist yet, automatically create account for demo/first-time login
-      if (
-        err.code === 'auth/user-not-found' || 
-        err.code === 'auth/invalid-credential' ||
-        err.code === 'auth/wrong-password'
-      ) {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-          setInfoMessage('New account created and signed in successfully!');
-          setTimeout(() => {
+    if (mode === 'signup') {
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        setInfoMessage('Account created successfully!');
+        setTimeout(() => router.push('/'), 600);
+      } catch (err: any) {
+        if (err.code === 'auth/email-already-in-use') {
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
             router.push('/');
-          }, 800);
-          return;
-        } catch (createErr: any) {
-          setError(createErr.message || 'Authentication failed. Please verify password.');
+            return;
+          } catch (signInErr: any) {
+            setError('Account exists. Please check your password to sign in.');
+          }
+        } else {
+          setError(err.message || 'Failed to create account.');
         }
-      } else {
-        setError(err.message || 'Failed to sign in.');
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+    } else {
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        router.push('/');
+      } catch (err: any) {
+        if (
+          err.code === 'auth/user-not-found' || 
+          err.code === 'auth/invalid-credential' ||
+          err.code === 'auth/wrong-password'
+        ) {
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            setInfoMessage('New account created and signed in successfully!');
+            setTimeout(() => router.push('/'), 600);
+            return;
+          } catch (createErr: any) {
+            setError(createErr.message || 'Authentication failed. Please check credentials.');
+          }
+        } else {
+          setError(err.message || 'Failed to sign in.');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -76,16 +95,40 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8"
+        className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8"
       >
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 bg-slate-900 text-white rounded-lg">
+          <div className="p-2.5 bg-slate-900 text-white rounded-xl">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900">Merchant Portal</h1>
-            <p className="text-xs text-slate-500">Sign in to manage transactions & webhooks</p>
+            <p className="text-xs text-slate-500">
+              {mode === 'signup' ? 'Create a new merchant account' : 'Sign in to access your terminal & webhooks'}
+            </p>
           </div>
+        </div>
+
+        {/* Mode Selector Tabs */}
+        <div className="flex p-1 bg-slate-100 rounded-xl mb-6 border border-slate-200">
+          <button
+            type="button"
+            onClick={() => { setMode('signin'); setError(null); }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              mode === 'signin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('signup'); setError(null); }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+              mode === 'signup' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Sign Up
+          </button>
         </div>
 
         {error && (
@@ -142,7 +185,9 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-slate-900 text-white font-medium py-2.5 rounded-lg hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
           >
-            {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
+            {loading 
+              ? (mode === 'signup' ? 'Creating Account...' : 'Authenticating...') 
+              : (mode === 'signup' ? 'Create Merchant Account' : 'Sign In to Dashboard')}
             {!loading && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
@@ -182,6 +227,32 @@ export default function LoginPage() {
           </svg>
           Google Account
         </button>
+
+        <div className="mt-6 text-center text-xs text-slate-500">
+          {mode === 'signin' ? (
+            <p>
+              Need a new merchant account?{' '}
+              <button 
+                type="button" 
+                onClick={() => { setMode('signup'); setError(null); }} 
+                className="font-semibold text-slate-900 hover:underline"
+              >
+                Sign Up
+              </button>
+            </p>
+          ) : (
+            <p>
+              Already registered?{' '}
+              <button 
+                type="button" 
+                onClick={() => { setMode('signin'); setError(null); }} 
+                className="font-semibold text-slate-900 hover:underline"
+              >
+                Sign In
+              </button>
+            </p>
+          )}
+        </div>
       </motion.div>
     </div>
   );
