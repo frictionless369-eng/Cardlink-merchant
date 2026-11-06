@@ -3,9 +3,11 @@
 import Sidebar from '@/components/dashboard/Sidebar';
 import TopBar from '@/components/dashboard/TopBar';
 import AuthGuard from '@/components/dashboard/AuthGuard';
-import { Key, Shield, Webhook, CreditCard } from 'lucide-react';
+import { Shield, Webhook, CreditCard } from 'lucide-react';
 
 export default function SettingsPage() {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardlink-merchant.vercel.app';
+
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
@@ -54,15 +56,27 @@ export default function SettingsPage() {
                 <div className="space-y-3 text-xs font-mono">
                   <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
                     <div className="font-semibold text-slate-700">Payment Webhook</div>
-                    <div className="text-slate-600 break-all">https://ais-dev-fpwzezjzrwpku6blc74ooe-501042649401.asia-east1.run.app/api/webhooks/cardlink/payment</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/payment</div>
                   </div>
                   <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
                     <div className="font-semibold text-slate-700">Capture Webhook</div>
-                    <div className="text-slate-600 break-all">https://ais-dev-fpwzezjzrwpku6blc74ooe-501042649401.asia-east1.run.app/api/webhooks/cardlink/capture</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/capture</div>
                   </div>
                   <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
                     <div className="font-semibold text-slate-700">Cancel Webhook</div>
-                    <div className="text-slate-600 break-all">https://ais-dev-fpwzezjzrwpku6blc74ooe-501042649401.asia-east1.run.app/api/webhooks/cardlink/cancel</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/cancel</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
+                    <div className="font-semibold text-slate-700">Payment Advice Webhook</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/payment-advice</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
+                    <div className="font-semibold text-slate-700">Capture Advice Webhook</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/capture-advice</div>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
+                    <div className="font-semibold text-slate-700">Cancel Advice Webhook</div>
+                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/cancel-advice</div>
                   </div>
                 </div>
               </div>
