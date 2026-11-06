@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CreditCard, Delete, CornerDownLeft, Volume2, VolumeX, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Delete, CornerDownLeft, Volume2, VolumeX, CheckCircle, AlertTriangle, RefreshCw, ShieldAlert, Wallet, TrendingUp, Info } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 type ActiveField = 'pan' | 'expiry' | 'cvv' | 'amount';
+type TxMode = 'SALE' | 'PRE_AUTH' | 'FORCE_SALE';
 
 export function OldschoolKeypad() {
   const [activeField, setActiveField] = useState<ActiveField>('pan');
+  const [txMode, setTxMode] = useState<TxMode>('SALE');
+  const [bypass3DS, setBypass3DS] = useState<boolean>(false);
   const [pan, setPan] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
@@ -18,6 +21,30 @@ export function OldschoolKeypad() {
   const [statusMessage, setStatusMessage] = useState<string | null>('READY FOR PAN ENTRY');
   const [processing, setProcessing] = useState(false);
   const [txSuccess, setTxSuccess] = useState<boolean | null>(null);
+  const [merchantBalance, setMerchantBalance] = useState<number>(0);
+  const [showRiskTooltip, setShowRiskTooltip] = useState<boolean>(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'transactions'));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        let total = 0;
+        snapshot.docs.forEach((docItem) => {
+          const data = docItem.data();
+          if (data.status === 'Completed') {
+            const amt = typeof data.amount === 'number' ? data.amount : parseFloat(data.amount || '0');
+            if (!isNaN(amt)) total += amt;
+          }
+        });
+        setMerchantBalance(total);
+      },
+      (err) => {
+        console.error('Balance fetch error:', err);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   // Audio Context synth for key clicks
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -62,6 +89,51 @@ export function OldschoolKeypad() {
     const cleaned = value.replace(/\D/g, '').slice(0, 16);
     return cleaned.replace(/(.{4})/g, '$1 ').trim();
   };
+
+  const evaluateCardRisk = (cardNumber: string, txAmount: string) => {
+    const cleaned = cardNumber.replace(/\D/g, '');
+    if (cleaned.length < 6) return null;
+
+    let score = 18;
+    if (cleaned === '4500000000000001') {
+      score = 92;
+    } else if (cleaned === '4500000000000000' || cleaned === '5100000000000000') {
+      score = 8;
+    } else if (cleaned.length >= 15) {
+      // Luhn check
+      let sum = 0;
+      let shouldDouble = false;
+      for (let i = cleaned.length - 1; i >= 0; i--) {
+        let digit = parseInt(cleaned.charAt(i), 10);
+        if (shouldDouble) {
+          digit *= 2;
+          if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+        shouldDouble = !shouldDouble;
+      }
+      const luhnValid = sum % 10 === 0;
+      score = luhnValid ? 14 : 78;
+    } else {
+      score = 32;
+    }
+
+    const numericAmount = parseFloat(txAmount || '0');
+    let prediction = 'APPROVAL LIKELY (NOMINAL)';
+    let level: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+
+    if (score >= 70) {
+      level = 'HIGH';
+      prediction = 'DECLINE LIKELY (HIGH RISK)';
+    } else if (score >= 30 || numericAmount > 1000) {
+      level = 'MEDIUM';
+      prediction = numericAmount > 1000 ? '3DS STEP-UP REQUIRED' : 'MODERATE RISK (REVIEW)';
+    }
+
+    return { score, level, prediction };
+  };
+
+  const riskInfo = evaluateCardRisk(pan, amount);
 
   const formatExpiry = (value: string) => {
     const cleaned = value.replace(/\D/g, '').slice(0, 4);
@@ -137,7 +209,8 @@ export function OldschoolKeypad() {
     setTxSuccess(null);
   };
 
-  const handleSubmitPAN = async () => {
+  const handleSubmitPAN = async (overrideMode?: TxMode) => {
+    const activeMode = overrideMode || txMode;
     if (pan.length < 15) {
       playBeep(250, 'sawtooth', 0.2);
       setStatusMessage('ERROR: INVALID PAN LENGTH (MIN 15-16)');
@@ -147,7 +220,7 @@ export function OldschoolKeypad() {
 
     playBeep(1200, 'sine', 0.1);
     setProcessing(true);
-    setStatusMessage('PROCESSING MANUAL PAN AUTHORIZATION...');
+    setStatusMessage(`PROCESSING ${activeMode.replace('_', '-')} ${bypass3DS ? '(3DS BYPASS)' : ''}...`);
 
     try {
       const auth = getAuth();
@@ -157,12 +230,28 @@ export function OldschoolKeypad() {
       const orderId = 'pos_' + randomArray[0].toString(36);
       const authCode = (randomArray[1] % 900000) + 100000;
 
+      const txStatus = activeMode === 'PRE_AUTH' ? 'Pending' : 'Completed';
+      const txType =
+        activeMode === 'PRE_AUTH'
+          ? 'pre_auth'
+          : activeMode === 'FORCE_SALE'
+          ? 'force_sale'
+          : 'payment';
+      const webhookEvent =
+        activeMode === 'PRE_AUTH'
+          ? 'manual_pan_pre_auth'
+          : activeMode === 'FORCE_SALE'
+          ? 'manual_pan_force_sale'
+          : 'manual_pan_capture';
+
       // Persist transaction
       await addDoc(collection(db, 'transactions'), {
         id: orderId,
         date: new Date().toISOString(),
         amount: parseFloat(amount),
-        status: 'Completed',
+        status: txStatus,
+        type: txType,
+        threeDSBypass: bypass3DS,
         merchantId: user?.uid || 'pos_manual_terminal',
         entryMethod: 'MANUAL_PAN_KEYPAD',
         cardBrand: getCardBrand(pan),
@@ -173,10 +262,12 @@ export function OldschoolKeypad() {
       await addDoc(collection(db, 'webhook_logs'), {
         timestamp: new Date().toISOString(),
         status: 'success',
-        event: 'manual_pan_capture',
+        event: webhookEvent,
         payload: {
           orderId,
           amount,
+          mode: activeMode,
+          threeDSBypass: bypass3DS,
           entryMode: 'KEYPAD_MOTO',
           maskedPan: `**** **** **** ${pan.slice(-4)}`,
           cardBrand: getCardBrand(pan)
@@ -185,7 +276,7 @@ export function OldschoolKeypad() {
       });
 
       playBeep(1500, 'sine', 0.25);
-      setStatusMessage(`SUCCESS! AUTH CODE: ${authCode}`);
+      setStatusMessage(`${activeMode.replace('_', '-')} OK! AUTH: ${authCode}`);
       setTxSuccess(true);
     } catch (err: any) {
       playBeep(200, 'sawtooth', 0.3);
@@ -229,18 +320,81 @@ export function OldschoolKeypad() {
           {/* PAN Field */}
           <div 
             onClick={() => setActiveField('pan')} 
-            className={`p-2 rounded border cursor-pointer transition-all ${
+            className={`p-2 rounded border cursor-pointer transition-all relative ${
               activeField === 'pan' 
                 ? 'bg-emerald-900/60 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]' 
                 : 'bg-emerald-950/40 border-emerald-900/50 text-emerald-600'
             }`}
           >
-            <div className="text-[9px] uppercase tracking-widest text-emerald-400/70">1. PRIMARY ACCOUNT NUMBER (PAN)</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[9px] uppercase tracking-widest text-emerald-400/70">1. PRIMARY ACCOUNT NUMBER (PAN)</div>
+              {riskInfo && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRiskTooltip(!showRiskTooltip);
+                  }}
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                    riskInfo.level === 'LOW'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : riskInfo.level === 'MEDIUM'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  }`}
+                >
+                  <Info size={10} />
+                  <span>RISK: {riskInfo.score}/100</span>
+                </button>
+              )}
+            </div>
             <div className="text-base font-bold tracking-widest h-6 flex items-center">
               {formatPAN(pan) || <span className="opacity-30">____ ____ ____ ____</span>}
               {activeField === 'pan' && <span className="animate-ping inline-block w-1.5 h-4 bg-emerald-300 ml-1"></span>}
             </div>
           </div>
+
+          {/* Risk Score, Balance & Outcome Prediction Tooltip */}
+          {riskInfo && showRiskTooltip && (
+            <div className="p-2.5 rounded-lg bg-slate-900/95 border border-emerald-500/40 shadow-lg text-[11px] space-y-1.5">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+                <span className="flex items-center gap-1 text-slate-400 font-semibold">
+                  <ShieldAlert size={12} className={
+                    riskInfo.level === 'LOW' ? 'text-emerald-400' :
+                    riskInfo.level === 'MEDIUM' ? 'text-amber-400' : 'text-red-400'
+                  } />
+                  RISK SCORE:
+                </span>
+                <span className={`font-bold ${
+                  riskInfo.level === 'LOW' ? 'text-emerald-400' :
+                  riskInfo.level === 'MEDIUM' ? 'text-amber-400' : 'text-red-400'
+                }`}>
+                  {riskInfo.score}/100 ({riskInfo.level})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-400">
+                  <Wallet size={12} className="text-cyan-400" />
+                  MERCHANT BALANCE:
+                </span>
+                <span className="font-bold text-cyan-300 tabular-nums">
+                  ${merchantBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-slate-400">
+                  <TrendingUp size={12} className="text-emerald-400" />
+                  OUTCOME PREDICTION:
+                </span>
+                <span className={`font-bold ${
+                  riskInfo.level === 'LOW' ? 'text-emerald-300' :
+                  riskInfo.level === 'MEDIUM' ? 'text-amber-300' : 'text-red-300'
+                }`}>
+                  {riskInfo.prediction}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2">
             {/* Expiry Field */}
@@ -374,9 +528,76 @@ export function OldschoolKeypad() {
           </button>
         </div>
 
+        {/* Function Toggles: 3DS Bypass, Sale, Pre-Auth, Force Sale */}
+        <div className="grid grid-cols-4 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              playBeep(1050, 'sine', 0.04);
+              setBypass3DS(!bypass3DS);
+            }}
+            className={`py-2 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition-all flex flex-col items-center justify-center ${
+              bypass3DS
+                ? 'bg-amber-500/20 text-amber-300 border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.25)]'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            <span>3DS BYPASS</span>
+            <span className="text-[9px] mt-0.5">{bypass3DS ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playBeep(900, 'sine', 0.04);
+              setTxMode('SALE');
+            }}
+            className={`py-2 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition-all flex flex-col items-center justify-center ${
+              txMode === 'SALE'
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            <span>SALE</span>
+            <span className="text-[9px] mt-0.5">CAPTURE</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playBeep(900, 'sine', 0.04);
+              setTxMode('PRE_AUTH');
+            }}
+            className={`py-2 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition-all flex flex-col items-center justify-center ${
+              txMode === 'PRE_AUTH'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            <span>PRE-AUTH</span>
+            <span className="text-[9px] mt-0.5">HOLD</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playBeep(900, 'sine', 0.04);
+              setTxMode('FORCE_SALE');
+            }}
+            className={`py-2 px-1.5 rounded-lg text-[10px] font-mono font-bold border transition-all flex flex-col items-center justify-center ${
+              txMode === 'FORCE_SALE'
+                ? 'bg-purple-500/20 text-purple-300 border-purple-400'
+                : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+            }`}
+          >
+            <span>FORCE</span>
+            <span className="text-[9px] mt-0.5">SALE</span>
+          </button>
+        </div>
+
         {/* Main Processing Enter Key */}
         <button
-          onClick={handleSubmitPAN}
+          onClick={() => handleSubmitPAN()}
           disabled={processing}
           className="w-full h-16 mt-2 bg-gradient-to-b from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 active:translate-y-0.5 text-white font-bold text-base rounded-2xl shadow-xl border-2 border-emerald-400 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
         >
@@ -388,7 +609,7 @@ export function OldschoolKeypad() {
           ) : (
             <span className="flex items-center gap-2">
               <CornerDownLeft size={20} />
-              ENTER / PROCESS MANUAL PAN
+              ENTER / PROCESS {txMode.replace('_', '-')}
             </span>
           )}
         </button>

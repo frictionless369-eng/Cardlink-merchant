@@ -1,38 +1,59 @@
 {
   "entities": {
-    "Merchant": {
-      "title": "Merchant",
-      "description": "Merchant profile and balance.",
+    "User": {
+      "title": "User",
+      "description": "Authenticated merchant user profile.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "balance": { "type": "number" }
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "role": { "type": "string", "enum": ["merchant", "admin"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
       },
-      "required": ["id", "balance"]
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Merchant": {
+      "title": "Merchant",
+      "description": "Merchant account and settlement balance.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Merchant UID" },
+        "balance": { "type": "number", "description": "Current settled balance" },
+        "currency": { "type": "string", "description": "ISO currency code (e.g. USD, EUR)" },
+        "cardlinkMerchantId": { "type": "string", "description": "Cardlink MID" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last balance update" }
+      },
+      "required": ["id", "balance", "currency"]
     },
     "Transaction": {
       "title": "Transaction",
-      "description": "A financial transaction record.",
+      "description": "Immutable financial transaction ledger entry.",
       "type": "object",
       "properties": {
-        "id": { "type": "string", "description": "Unique transaction ID" },
+        "id": { "type": "string", "description": "Unique transaction/order ID" },
         "date": { "type": "string", "format": "date-time", "description": "Transaction timestamp" },
         "amount": { "type": "number", "description": "Transaction amount" },
-        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed"], "description": "Transaction status" },
+        "currency": { "type": "string", "description": "ISO currency code" },
+        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed", "Cancelled"], "description": "Transaction status" },
+        "type": { "type": "string", "enum": ["payment", "capture", "cancel", "refund"], "description": "Ledger entry type" },
+        "entryMethod": { "type": "string", "enum": ["HOSTED_REDIRECT", "MANUAL_PAN_KEYPAD"], "description": "Payment capture method" },
+        "cardBrand": { "type": "string", "description": "Card scheme (VISA, MASTERCARD, etc.)" },
+        "maskedPan": { "type": "string", "description": "Masked PAN (last 4 digits)" },
         "merchantId": { "type": "string", "description": "ID of the merchant" }
       },
       "required": ["id", "date", "amount", "status", "merchantId"]
     },
     "WebhookLog": {
       "title": "WebhookLog",
-      "description": "A record of incoming webhook events.",
+      "description": "Audit trail of incoming Cardlink webhook callback events.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Unique log ID" },
         "timestamp": { "type": "string", "format": "date-time", "description": "Event timestamp" },
         "status": { "type": "string", "enum": ["success", "failure"], "description": "Log status" },
-        "event": { "type": "string", "description": "Event name" },
-        "payload": { "type": "object", "description": "Raw payload" },
+        "event": { "type": "string", "description": "Event name (payment, capture, cancel, etc.)" },
+        "payload": { "type": "object", "description": "Raw callback payload" },
         "error": { "type": "string", "description": "Optional error message" },
         "merchantId": { "type": "string", "description": "ID of the merchant" }
       },
@@ -40,17 +61,21 @@
     }
   },
   "firestore": {
-    "/transactions/{transactionId}": {
-      "schema": "Transaction",
-      "description": "Stores transaction records."
-    },
-    "/webhook_logs/{logId}": {
-      "schema": "WebhookLog",
-      "description": "Stores webhook callback logs."
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores authenticated user profiles."
     },
     "/merchants/{merchantId}": {
       "schema": "Merchant",
-      "description": "Stores merchant data."
+      "description": "Stores merchant account balances and gateway settings."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Stores transaction ledger records."
+    },
+    "/webhook_logs/{logId}": {
+      "schema": "WebhookLog",
+      "description": "Stores webhook callback audit logs."
     }
   }
 }
