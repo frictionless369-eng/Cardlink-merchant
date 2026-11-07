@@ -15,7 +15,7 @@
     },
     "Merchant": {
       "title": "Merchant",
-      "description": "Merchant account and settlement balance.",
+      "description": "Merchant account, gateway settings, and settlement balance.",
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Merchant UID" },
@@ -58,6 +58,20 @@
         "merchantId": { "type": "string", "description": "ID of the merchant" }
       },
       "required": ["id", "timestamp", "status", "event", "merchantId"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "Persistent resort room showcase tier with image asset metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Room ID" },
+        "name": { "type": "string", "description": "Room suite title" },
+        "price": { "type": "number", "description": "Price per night" },
+        "image": { "type": "string", "description": "Image asset path/URL" },
+        "description": { "type": "string", "description": "Suite description" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last modified timestamp" }
+      },
+      "required": ["id", "name", "price", "image"]
     }
   },
   "firestore": {
@@ -76,6 +90,10 @@
     "/webhook_logs/{logId}": {
       "schema": "WebhookLog",
       "description": "Stores webhook callback audit logs."
+    },
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Stores persistent room showcase tiers and image metadata."
     }
   }
 }

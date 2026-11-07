@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { CreditCard, Truck, ReceiptText, Calculator, ExternalLink, BedDouble, Check } from 'lucide-react';
+import { CreditCard, Truck, ReceiptText, Calculator, ExternalLink, BedDouble, Check, Database } from 'lucide-react';
 import Image from 'next/image';
 import { OldschoolKeypad } from './dashboard/OldschoolKeypad';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
 
 interface RoomOption {
   id: string;
@@ -14,7 +16,7 @@ interface RoomOption {
   description: string;
 }
 
-const ROOMS: RoomOption[] = [
+const DEFAULT_ROOMS: RoomOption[] = [
   {
     id: 'deluxe',
     name: 'Deluxe Sea View Suite',
@@ -40,12 +42,55 @@ const ROOMS: RoomOption[] = [
 
 export default function CheckoutForm() {
   const [paymentMode, setPaymentMode] = useState<'redirect' | 'keypad'>('redirect');
-  const [selectedRoom, setSelectedRoom] = useState<RoomOption>(ROOMS[0]);
+  const [rooms, setRooms] = useState<RoomOption[]>(DEFAULT_ROOMS);
+  const [selectedRoom, setSelectedRoom] = useState<RoomOption>(DEFAULT_ROOMS[0]);
+  const [syncedToDb, setSyncedToDb] = useState(false);
   const [formData, setFormData] = useState({
     name: 'John Doe',
     email: 'frictionless369@gmail.com',
     address: '123 Athens Riviera, Greece',
   });
+
+  // Seed default rooms to Firestore persistently and listen to real-time updates
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, 'rooms'),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          // Seed default room records to Firestore database
+          try {
+            for (const r of DEFAULT_ROOMS) {
+              await setDoc(doc(db, 'rooms', r.id), {
+                ...r,
+                updatedAt: new Date().toISOString(),
+              });
+            }
+            setSyncedToDb(true);
+          } catch (err) {
+            console.error('Failed to seed rooms to Firestore:', err);
+          }
+        } else {
+          const loadedRooms: RoomOption[] = snapshot.docs.map((docItem) => {
+            const data = docItem.data();
+            return {
+              id: docItem.id,
+              name: data.name || 'Resort Suite',
+              price: typeof data.price === 'number' ? data.price : parseFloat(data.price || '120'),
+              image: data.image || '/images/deluxe_suite_room.jpg',
+              description: data.description || 'Luxury accommodation',
+            };
+          });
+          setRooms(loadedRooms);
+          setSyncedToDb(true);
+          setSelectedRoom((prev) => (!prev || !loadedRooms.some((r) => r.id === prev.id) ? loadedRooms[0] : prev));
+        }
+      },
+      (error) => {
+        console.error('Rooms subscription error:', error);
+      }
+    );
+    return () => unsub();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -86,9 +131,16 @@ export default function CheckoutForm() {
           referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/60 to-transparent flex flex-col justify-end p-6 text-white">
-          <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase mb-1">
-            Cardlink One-Page Checkout
-          </span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">
+              Cardlink One-Page Checkout
+            </span>
+            {syncedToDb && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded-full">
+                <Database size={10} /> Persistent DB Assets
+              </span>
+            )}
+          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Luxury Resort &amp; Hotel Reservation</h1>
           <p className="text-xs text-slate-300 mt-1 max-w-lg">
             Select your room tier and proceed with Cardlink Hosted Gateway or Tactile Virtual POS Keypad.
@@ -149,7 +201,7 @@ export default function CheckoutForm() {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {ROOMS.map((room) => {
+                {rooms.map((room) => {
                   const isSelected = selectedRoom.id === room.id;
                   return (
                     <div

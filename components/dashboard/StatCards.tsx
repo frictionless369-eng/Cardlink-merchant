@@ -5,6 +5,9 @@ import { db } from '../../lib/firebase';
 import { collection, query, onSnapshot, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
+import { FileText } from 'lucide-react';
+import { ReceiptModal } from './ReceiptModal';
+
 export function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white p-6 border border-slate-200 rounded-xl shadow-sm">
@@ -90,6 +93,8 @@ export function DashboardMetrics() {
 export function TransactionTable() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTx, setSelectedTx] = useState<any | null>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
@@ -130,47 +135,77 @@ export function TransactionTable() {
     );
   }
 
+  const handleOpenReceipt = (tx: any) => {
+    setSelectedTx(tx);
+    setIsReceiptOpen(true);
+  };
+
   return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-      <table className="w-full text-sm text-left">
-        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
-          <tr>
-            <th className="px-6 py-3.5">Transaction ID</th>
-            <th className="px-6 py-3.5">Date</th>
-            <th className="px-6 py-3.5 text-right">Amount</th>
-            <th className="px-6 py-3.5">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {transactions.length === 0 ? (
+    <>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 text-xs uppercase tracking-wider">
             <tr>
-              <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-xs font-mono">
-                No transactions recorded. Volume is currently $0.00.
-              </td>
+              <th className="px-6 py-3.5">Transaction ID</th>
+              <th className="px-6 py-3.5">Date</th>
+              <th className="px-6 py-3.5 text-right">Amount</th>
+              <th className="px-6 py-3.5">Status</th>
+              <th className="px-6 py-3.5 text-right">Receipt / Actions</th>
             </tr>
-          ) : (
-            transactions.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="px-6 py-4 font-mono font-medium text-slate-900">{t.id}</td>
-                <td className="px-6 py-4 text-slate-600 text-xs">
-                  {t.date ? new Date(t.date).toLocaleString() : '-'}
-                </td>
-                <td className="px-6 py-4 text-right font-mono tabular-nums font-semibold text-slate-900">
-                  ${typeof t.amount === 'number' ? t.amount.toFixed(2) : parseFloat(t.amount || '0').toFixed(2)}
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    t.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    t.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {t.status}
-                  </span>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {transactions.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center text-slate-400 text-xs font-mono">
+                  No transactions recorded. Volume is currently $0.00.
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ) : (
+              transactions.map((t) => (
+                <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="px-6 py-4 font-mono font-medium text-slate-900">{t.id}</td>
+                  <td className="px-6 py-4 text-slate-600 text-xs">
+                    {t.date ? new Date(t.date).toLocaleString() : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-right font-mono tabular-nums font-semibold text-slate-900">
+                    ${typeof t.amount === 'number' ? t.amount.toFixed(2) : parseFloat(t.amount || '0').toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      t.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      t.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {t.status === 'Completed' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReceipt(t)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors rounded-lg border border-slate-200 shadow-2xs cursor-pointer"
+                        title="Generate Printable PDF Receipt"
+                      >
+                        <FileText size={13} className="text-slate-500" />
+                        <span>Download Receipt</span>
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">N/A</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <ReceiptModal
+        transaction={selectedTx}
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+      />
+    </>
   );
 }
+
