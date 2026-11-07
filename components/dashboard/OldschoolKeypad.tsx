@@ -293,8 +293,18 @@ export function OldschoolKeypad() {
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-xs font-mono font-bold tracking-widest text-slate-400">CARDLINK POS-2000</span>
+          <span className="text-xs font-mono font-bold tracking-widest text-slate-400">POS-2000</span>
         </div>
+        
+        {/* Merchant Balance Display */}
+        <div className="bg-slate-800 px-3 py-1 rounded-md border border-slate-700 flex items-center gap-2">
+          <Wallet size={12} className="text-cyan-400" />
+          <span className="text-[10px] text-slate-400 font-bold uppercase">BAL:</span>
+          <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
+            ${merchantBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+
         <button 
           onClick={() => setSoundEnabled(!soundEnabled)} 
           className="text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1 bg-slate-800 px-2 py-1 rounded"

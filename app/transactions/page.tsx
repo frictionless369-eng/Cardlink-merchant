@@ -17,7 +17,7 @@ export default function TransactionsPage() {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-xl font-bold text-slate-900">Transaction History</h1>
-                <p className="text-xs text-slate-500">Live payment audit trail from Cardlink gateway</p>
+                <p className="text-xs text-slate-500">Live payment audit trail from ABA PayWay gateway</p>
               </div>
               <ClearTransactionLogsButton />
             </div>

@@ -217,16 +217,6 @@ export default function SettingsPage() {
                       <Globe className="w-3.5 h-3.5" /> cardlink-merchant.vercel.app
                     </span>
                   </div>
-                  <div className="pt-2">
-                    <a
-                      href="https://console.firebase.google.com/project/gen-lang-client-0864652260/authentication/settings"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-900 hover:text-slate-700 underline"
-                    >
-                      Open Firebase Console Authorized Domains <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
                 </div>
               </div>
 
@@ -238,21 +228,21 @@ export default function SettingsPage() {
                 </h2>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500">Merchant ID</span>
-                    <span className="font-mono font-medium text-slate-900">9000012429</span>
+                    <span className="text-slate-500">Merchant ID (MID)</span>
+                    <span className="font-mono font-bold text-slate-900">9000012429</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500">Primary Endpoint (MPI)</span>
                     <span className="font-mono text-xs text-slate-800">https://eurocommerce-test.cardlink.gr/vpos/shophandlermpi</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500">Secondary Endpoint (XML API)</span>
-                    <span className="font-mono text-xs text-slate-800">https://eurocommerce-test.cardlink.gr/vpos/xmlpayvpos</span>
+                    <span className="text-slate-500">Digest Method</span>
+                    <span className="font-mono text-xs text-slate-800">SHA-256 (Base64 Encoded)</span>
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-slate-500">Shared Secret Status</span>
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
-                      <Shield className="w-3.5 h-3.5" /> Encrypted in Environment
+                      <Shield className="w-3.5 h-3.5" /> Cardlink1 (Active)
                     </span>
                   </div>
                 </div>
@@ -262,7 +252,7 @@ export default function SettingsPage() {
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                 <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 mb-4">
                   <Webhook className="w-5 h-5 text-slate-700" />
-                  Registered Webhook Event Endpoints
+                  Registered Cardlink Webhook Endpoints
                 </h2>
                 <div className="space-y-3 text-xs font-mono">
                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
@@ -276,18 +266,6 @@ export default function SettingsPage() {
                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
                     <div className="font-semibold text-slate-700">Cancel Webhook</div>
                     <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/cancel</div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                    <div className="font-semibold text-slate-700">Payment Advice Webhook</div>
-                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/payment-advice</div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                    <div className="font-semibold text-slate-700">Capture Advice Webhook</div>
-                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/capture-advice</div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                    <div className="font-semibold text-slate-700">Cancel Advice Webhook</div>
-                    <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/cancel-advice</div>
                   </div>
                 </div>
               </div>

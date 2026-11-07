@@ -134,7 +134,7 @@ export function LogConsole() {
         statusCode: 200,
         method: 'CLI',
         endpoint: 'local://status',
-        event: `MID: 9000012429 | STREAM: CONNECTED | LOGS: ${logs.length}`,
+        event: `MID: 9000012429 | GATEWAY: CARDLINK VPOS | STREAM: CONNECTED | LOGS: ${logs.length}`,
         status: 'info',
       });
       return;
