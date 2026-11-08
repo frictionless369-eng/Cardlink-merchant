@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { LogOut, User as UserIcon, Lock } from 'lucide-react';
+import { User as UserIcon, Lock, RefreshCw } from 'lucide-react';
 import { AdminModal } from './AdminModal';
 
 export default function TopBar({ title }: { title: string }) {
@@ -19,9 +19,9 @@ export default function TopBar({ title }: { title: string }) {
     return () => unsubscribe();
   }, []);
 
-  const handleSignOut = async () => {
+  const handleResetSession = async () => {
     await signOut(auth);
-    router.push('/login');
+    router.push('/');
   };
 
   return (
@@ -44,12 +44,12 @@ export default function TopBar({ title }: { title: string }) {
           </div>
 
           <button
-            onClick={handleSignOut}
-            className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-red-600 transition-colors py-1.5 px-2.5 rounded-md hover:bg-red-50 cursor-pointer"
-            title="Sign Out"
+            onClick={handleResetSession}
+            className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-md hover:bg-slate-100 cursor-pointer"
+            title="Reset Session"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Reset Session</span>
           </button>
         </div>
       </header>
@@ -58,4 +58,3 @@ export default function TopBar({ title }: { title: string }) {
     </>
   );
 }
-
