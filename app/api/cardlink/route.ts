@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const secret = process.env.CARDLINK_SECRET || "Cardlink1";
     const mid = process.env.CARDLINK_MERCHANT_ID || "9000012429";
     const primaryUrl = process.env.CARDLINK_PRIMARY_URL || "https://eurocommerce-test.cardlink.gr/vpos/shophandlermpi";
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cardlink-merchant.vercel.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cardlink-merchant-gilt.vercel.app";
 
     const randomArray = new Uint32Array(1);
     crypto.getRandomValues(randomArray);

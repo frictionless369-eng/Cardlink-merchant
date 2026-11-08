@@ -176,13 +176,13 @@ export function AdminModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
                     <div className="text-slate-400">Payment Webhook</div>
                     <div className="text-emerald-400 break-all text-[11px]">
-                      https://cardlink-merchant.vercel.app/api/webhooks/cardlink/payment
+                      https://cardlink-merchant-gilt.vercel.app/api/webhooks/cardlink/payment
                     </div>
                   </div>
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
                     <div className="text-slate-400">Capture Webhook</div>
                     <div className="text-emerald-400 break-all text-[11px]">
-                      https://cardlink-merchant.vercel.app/api/webhooks/cardlink/capture
+                      https://cardlink-merchant-gilt.vercel.app/api/webhooks/cardlink/capture
                     </div>
                   </div>
                 </div>

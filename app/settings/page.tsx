@@ -10,7 +10,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 export default function SettingsPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardlink-merchant.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardlink-merchant-gilt.vercel.app';
 
   const [webhookConfig, setWebhookConfig] = useState({
     httpMethod: 'POST',
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500">Configured Authorized Domain</span>
                     <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5" /> cardlink-merchant.vercel.app
+                      <Globe className="w-3.5 h-3.5" /> cardlink-merchant-gilt.vercel.app
                     </span>
                   </div>
                 </div>
