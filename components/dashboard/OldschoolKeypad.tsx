@@ -23,6 +23,23 @@ export function OldschoolKeypad() {
   const [txSuccess, setTxSuccess] = useState<boolean | null>(null);
   const [merchantBalance, setMerchantBalance] = useState<number>(0);
   const [showRiskTooltip, setShowRiskTooltip] = useState<boolean>(true);
+  const [showPresets, setShowPresets] = useState(false);
+
+  // Test PAN Presets based on Cardlink/Visa/MC specs
+  const testPresets = [
+    { name: 'Visa Approved', pan: '4016360000000010' },
+    { name: 'Visa Decline', pan: '4016360000000028' },
+    { name: 'MC Approved', pan: '5188340000000011' },
+    { name: 'MC Decline', pan: '5188340000000029' },
+  ];
+
+  const applyPreset = (presetPan: string) => {
+    setPan(presetPan);
+    setExpiry('1228');
+    setCvv('123');
+    setStatusMessage('PRESET LOADED -> READY TO PROCESS');
+    setShowPresets(false);
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'transactions'));
@@ -296,13 +313,22 @@ export function OldschoolKeypad() {
           <span className="text-xs font-mono font-bold tracking-widest text-slate-400">POS-2000</span>
         </div>
         
-        {/* Merchant Balance Display */}
-        <div className="bg-slate-800 px-3 py-1 rounded-md border border-slate-700 flex items-center gap-2">
-          <Wallet size={12} className="text-cyan-400" />
-          <span className="text-[10px] text-slate-400 font-bold uppercase">BAL:</span>
-          <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
-            ${merchantBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+        {/* Merchant Balance & Test Cards */}
+        <div className="flex flex-col gap-1 items-end">
+          <div className="bg-slate-800 px-3 py-1 rounded-md border border-slate-700 flex items-center gap-2">
+            <Wallet size={12} className="text-cyan-400" />
+            <span className="text-[10px] text-slate-400 font-bold uppercase">BAL:</span>
+            <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
+              ${merchantBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <select 
+            onChange={(e) => e.target.value && applyPreset(e.target.value)}
+            className="bg-slate-800 text-[10px] text-emerald-400 font-mono font-bold border border-slate-700 rounded px-1"
+          >
+            <option value="">LOAD PRESET...</option>
+            {testPresets.map(p => <option key={p.pan} value={p.pan}>{p.name}</option>)}
+          </select>
         </div>
 
         <button 

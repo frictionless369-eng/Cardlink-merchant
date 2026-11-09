@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       currency = "EUR",
       consumerIdentity,
       merchantName = "Luxury Resort & Spa",
-      returnUrl = "https://cardlink-merchant-gilt.vercel.app/checkout",
+      returnUrl = "https://cardlink-merchant.vercel.app/checkout",
     } = body;
 
     const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount || "0");

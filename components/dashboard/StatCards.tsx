@@ -21,10 +21,10 @@ export function DashboardMetrics() {
   const [totalRevenue, setTotalRevenue] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [completedCount, setCompletedCount] = useState<number>(0);
+  const [failedCount, setFailedCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Real-time listener for live transaction metrics
     const q = query(collection(db, 'transactions'));
     const unsubscribeSnap = onSnapshot(
       q,
@@ -32,6 +32,7 @@ export function DashboardMetrics() {
           let revenueSum = 0;
           let pending = 0;
           let completed = 0;
+          let failed = 0;
 
           snapshot.docs.forEach((docItem) => {
             const data = docItem.data();
@@ -42,12 +43,15 @@ export function DashboardMetrics() {
               if (!isNaN(amt)) revenueSum += amt;
             } else if (data.status === 'Pending') {
               pending += 1;
+            } else {
+              failed += 1;
             }
           });
 
           setTotalRevenue(revenueSum);
           setPendingCount(pending);
           setCompletedCount(completed);
+          setFailedCount(failed);
           setLoading(false);
         },
         (err) => {
@@ -59,8 +63,11 @@ export function DashboardMetrics() {
     return () => unsubscribeSnap();
   }, []);
 
+  const total = completedCount + failedCount + pendingCount;
+  const successRate = total > 0 ? (completedCount / (total - pendingCount || 1)) * 100 : 0;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <StatCard 
         label="Total Revenue" 
         value={loading ? '...' : `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
@@ -72,6 +79,10 @@ export function DashboardMetrics() {
       <StatCard 
         label="Completed Orders" 
         value={loading ? '...' : completedCount.toString()} 
+      />
+      <StatCard 
+        label="Success Rate" 
+        value={loading ? '...' : `${successRate.toFixed(1)}%`} 
       />
     </div>
   );
@@ -137,7 +148,7 @@ export function TransactionTable() {
                 </td>
               </tr>
             ) : (
-              transactions.map((t) => {
+              transactions.map((t, index) => {
                 const statusNormalized = (t.status || '').toLowerCase().trim();
                 const isPendingOrAwaiting =
                   statusNormalized === 'pending' ||
@@ -147,7 +158,7 @@ export function TransactionTable() {
 
                 return (
                   <tr
-                    key={t.id}
+                    key={`${t.id}-${index}`}
                     className={`transition-colors relative ${
                       isPendingOrAwaiting
                         ? 'bg-amber-50/50 hover:bg-amber-50/80 animate-pulse border-l-4 border-l-amber-500'

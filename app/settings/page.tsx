@@ -21,7 +21,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export default function SettingsPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardlink-merchant-gilt.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cardlink-merchant.vercel.app';
 
   const [webhookConfig, setWebhookConfig] = useState({
     httpMethod: 'POST',
@@ -756,18 +756,44 @@ export default function SettingsPage() {
                 <Webhook className="w-5 h-5 text-slate-700" />
                 Registered Cardlink Webhook Endpoints
               </h2>
-              <div className="space-y-3 text-xs font-mono">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                  <div className="font-semibold text-slate-700">Payment Webhook</div>
-                  <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/payment</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-emerald-800 flex items-center justify-between">
+                    <span>Payment Advice Webhook</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-sans font-bold">Primary</span>
+                  </div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/payment-advice</div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                  <div className="font-semibold text-slate-700">Capture Webhook</div>
-                  <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/capture</div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-cyan-800 flex items-center justify-between">
+                    <span>Capture Advice Webhook</span>
+                    <span className="text-[10px] bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded font-sans font-bold">Settlement</span>
+                  </div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/capture-advice</div>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                  <div className="font-semibold text-slate-700">Cancel Webhook</div>
-                  <div className="text-slate-600 break-all">{baseUrl}/api/webhooks/cardlink/cancel</div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-amber-800 flex items-center justify-between">
+                    <span>Cancel Advice Webhook</span>
+                    <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-sans font-bold">Void / Refund</span>
+                  </div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/cancel-advice</div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-slate-700">Payment Standard Callback</div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/payment</div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-slate-700">Capture Standard Callback</div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/capture</div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <div className="font-semibold text-slate-700">Cancel Standard Callback</div>
+                  <div className="text-slate-600 break-all text-[11px]">{baseUrl}/api/webhooks/cardlink/cancel</div>
                 </div>
               </div>
             </div>

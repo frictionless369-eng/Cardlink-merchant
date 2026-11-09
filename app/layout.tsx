@@ -2,17 +2,17 @@ import type {Metadata} from 'next';
 import './globals.css'; // Global styles
 
 export const metadata: Metadata = {
-  title: 'ABA PayWay One-Page Checkout App',
-  description: 'A responsive luxury resort checkout application with integrated ABA Bank PayWay payment gateway and KHQR payments.',
+  title: 'Cardlink VPOS One-Page Checkout & Merchant Gateway',
+  description: 'A luxury resort booking & checkout platform with Cardlink VPOS, 3D-Secure shophandlermpi redirection, xmlpayvpos settlement, Visa Direct & Mastercard Send mTLS Keytool promotion, and real-time webhook audit logging.',
   openGraph: {
-    title: 'ABA PayWay One-Page Checkout App',
-    description: 'A responsive luxury resort checkout application with integrated ABA Bank PayWay payment gateway and KHQR payments.',
+    title: 'Cardlink VPOS One-Page Checkout & Merchant Gateway',
+    description: 'A luxury resort booking & checkout platform with Cardlink VPOS, 3D-Secure shophandlermpi redirection, xmlpayvpos settlement, Visa Direct & Mastercard Send mTLS Keytool promotion, and real-time webhook audit logging.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ABA PayWay One-Page Checkout App',
-    description: 'A responsive luxury resort checkout application with integrated ABA Bank PayWay payment gateway and KHQR payments.',
+    title: 'Cardlink VPOS One-Page Checkout & Merchant Gateway',
+    description: 'A luxury resort booking & checkout platform with Cardlink VPOS, 3D-Secure shophandlermpi redirection, xmlpayvpos settlement, Visa Direct & Mastercard Send mTLS Keytool promotion, and real-time webhook audit logging.',
   },
 };
 

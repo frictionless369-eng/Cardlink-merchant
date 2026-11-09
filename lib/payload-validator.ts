@@ -14,6 +14,8 @@ export interface ValidationResult {
     orderAmount?: string;
     currency?: string;
     paymentRef?: string;
+    cardToken?: string;
+    tokenOption?: string;
     digest?: string;
   };
 }
@@ -103,6 +105,9 @@ export function validateCardlinkPayload(
     }
   }
 
+  const cardToken = String(payload.cardToken || payload.cardtoken || payload.token || "").trim();
+  const tokenOption = String(payload.tokenOption || payload.tokenoption || "").trim();
+
   return {
     valid: errors.length === 0,
     errors,
@@ -117,6 +122,8 @@ export function validateCardlinkPayload(
       orderAmount,
       currency,
       paymentRef: paymentRef || undefined,
+      cardToken: cardToken || undefined,
+      tokenOption: tokenOption || undefined,
       digest: receivedDigest || undefined,
     },
   };

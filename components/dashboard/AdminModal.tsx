@@ -174,15 +174,21 @@ export function AdminModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               {activeTab === 'webhooks' && (
                 <div className="space-y-3 text-xs font-mono">
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                    <div className="text-slate-400">Payment Webhook</div>
+                    <div className="text-slate-400">Payment Advice Webhook</div>
                     <div className="text-emerald-400 break-all text-[11px]">
-                      https://cardlink-merchant-gilt.vercel.app/api/webhooks/cardlink/payment
+                      https://cardlink-merchant.vercel.app/api/webhooks/cardlink/payment-advice
                     </div>
                   </div>
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-                    <div className="text-slate-400">Capture Webhook</div>
-                    <div className="text-emerald-400 break-all text-[11px]">
-                      https://cardlink-merchant-gilt.vercel.app/api/webhooks/cardlink/capture
+                    <div className="text-slate-400">Capture Advice Webhook</div>
+                    <div className="text-cyan-400 break-all text-[11px]">
+                      https://cardlink-merchant.vercel.app/api/webhooks/cardlink/capture-advice
+                    </div>
+                  </div>
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                    <div className="text-slate-400">Cancel Advice Webhook</div>
+                    <div className="text-amber-400 break-all text-[11px]">
+                      https://cardlink-merchant.vercel.app/api/webhooks/cardlink/cancel-advice
                     </div>
                   </div>
                 </div>

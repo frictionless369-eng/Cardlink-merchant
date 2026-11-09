@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { PayoutMetrics } from '@/components/dashboard/PayoutMetrics';
 
 export default function PayoutsPage() {
   const [network, setNetwork] = useState<'VISA_DIRECT' | 'MASTERCARD_SEND' | 'BANK_TRANSFER'>('VISA_DIRECT');
@@ -152,6 +153,8 @@ export default function PayoutsPage() {
               <span>Cardlink (Acquiring) + Visa Direct &amp; Mastercard Send (Payouts)</span>
             </div>
           </div>
+
+          <PayoutMetrics />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left 2 Cols: Payout Dispatch Form */}

@@ -120,7 +120,7 @@ export function LogConsole() {
         statusCode: 200,
         method: 'CLI',
         endpoint: 'local://help',
-        event: 'AVAILABLE COMMANDS: help | ping | status | test-webhook <payment|capture|cancel> | clear',
+        event: 'COMMANDS: help | ping | status | test-webhook <payment|capture|cancel|payment-advice|capture-advice|cancel-advice> | clear',
         status: 'info',
       });
       return;
@@ -131,7 +131,7 @@ export function LogConsole() {
         statusCode: 200,
         method: 'CLI',
         endpoint: 'local://status',
-        event: `MID: 9000012429 | GATEWAY: CARDLINK VPOS | STREAM: CONNECTED | LOGS: ${logs.length}`,
+        event: `MID: 9000012429 | GATEWAY: CARDLINK VPOS | BASE: https://cardlink-merchant.vercel.app | LOGS: ${logs.length}`,
         status: 'info',
       });
       return;
@@ -172,8 +172,8 @@ export function LogConsole() {
     }
 
     if (cmd === 'test-webhook') {
-      const eventName = args[0] || 'payment';
-      const endpoint = `/api/webhooks/cardlink/${eventName}`;
+      const eventName = args[0] || 'payment-advice';
+      const endpoint = eventName.includes('/') ? eventName : `/api/webhooks/cardlink/${eventName}`;
       const start = performance.now();
       try {
         const res = await fetch(endpoint, {
@@ -184,10 +184,13 @@ export function LogConsole() {
           },
           body: JSON.stringify({
             event: eventName,
-            orderId: `cli_${Date.now()}`,
-            amount: '75.00',
+            mid: '9000012429',
+            orderid: `cli_${Date.now()}`,
+            orderAmount: '75.00',
             currency: 'EUR',
             status: 'CAPTURED',
+            txId: `tx_${Date.now()}`,
+            paymentRef: `ref_${Date.now()}`,
           }),
         });
         const latency = Math.round(performance.now() - start);
@@ -196,7 +199,7 @@ export function LogConsole() {
           statusCode: res.status,
           method: 'POST',
           endpoint,
-          event: `WEBHOOK_${eventName.toUpperCase()}`,
+          event: `WEBHOOK_${eventName.toUpperCase().replace('-', '_')}`,
           status: res.ok ? 'success' : 'failure',
           latencyMs: latency,
           errorCode: !res.ok ? `HTTP_${res.status}` : undefined,
@@ -311,11 +314,11 @@ export function LogConsole() {
             </div>
           </div>
         ) : (
-          combinedLogs.map((log) => {
+          combinedLogs.map((log, index) => {
             const isExpanded = expandedId === log.id;
             return (
               <div
-                key={log.id}
+                key={`${log.id}-${index}`}
                 onClick={() => setExpandedId(isExpanded ? null : log.id)}
                 className="p-2 rounded-lg bg-slate-900/40 hover:bg-slate-900/90 border border-slate-800/60 cursor-pointer transition-colors"
               >
