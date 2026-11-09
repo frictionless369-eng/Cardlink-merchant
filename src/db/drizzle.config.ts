@@ -1,17 +1,14 @@
 import { defineConfig } from "drizzle-kit";
-import * as dotenv from "dotenv";
 
-dotenv.config();
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set in environment variables.");
-}
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://neondb_owner:npg_V5RbxQ6qipkM@ep-blue-union-bdoeb2yb-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: databaseUrl,
   },
 });

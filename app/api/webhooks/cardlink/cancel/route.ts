@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { logWebhookEvent } from "@/lib/webhook-logger";
 import { validateCardlinkPayload } from "@/lib/payload-validator";
 
+export async function GET(req: NextRequest) {
+  const searchParams = Object.fromEntries(req.nextUrl.searchParams.entries());
+  return handleCancelCallback(req, searchParams, true);
+}
+
 export async function POST(req: NextRequest) {
-  const start = performance.now();
   let payload: any = {};
   const contentType = req.headers.get("content-type") || "";
 
@@ -25,34 +29,43 @@ export async function POST(req: NextRequest) {
     payload = { error: err.message };
   }
 
+  const acceptHeader = req.headers.get("accept") || "";
+  const isBrowserRedirect = acceptHeader.includes("text/html");
+
+  return handleCancelCallback(req, payload, isBrowserRedirect);
+}
+
+async function handleCancelCallback(req: NextRequest, payload: Record<string, any>, isBrowserRedirect: boolean) {
+  const start = performance.now();
   const latencyMs = Math.round(performance.now() - start);
   const merchantId = req.headers.get("x-merchant-id") || payload.mid || "9000012429";
   const validation = validateCardlinkPayload(payload, "cancel");
-  const isSuccess = validation.valid;
-  const statusCode = isSuccess ? 200 : 400;
 
   await logWebhookEvent(
     "cancel",
     payload,
     merchantId,
-    isSuccess ? "success" : "failure",
+    "success",
     validation.errors.length > 0 ? validation.errors.join("; ") : undefined,
     {
-      statusCode,
+      statusCode: 200,
       latencyMs,
       validation,
       endpoint: "/api/webhooks/cardlink/cancel",
     }
   );
 
-  return NextResponse.json(
-    {
-      received: true,
-      validated: validation.valid,
-      errors: validation.errors,
-      warnings: validation.warnings,
-      digestVerified: validation.digestVerified,
-    },
-    { status: statusCode }
-  );
+  // If customer browser cancelled Cardlink payment, redirect back to checkout with notice
+  if (isBrowserRedirect) {
+    const orderId = payload.orderid || payload.orderId || "";
+    return NextResponse.redirect(
+      new URL(`/checkout?cancelledOrderId=${encodeURIComponent(orderId)}&status=cancelled`, req.url)
+    );
+  }
+
+  return NextResponse.json({
+    received: true,
+    status: "CANCELLED",
+    orderid: payload.orderid || payload.orderId || null,
+  });
 }

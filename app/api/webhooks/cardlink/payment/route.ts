@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { logWebhookEvent } from "@/lib/webhook-logger";
 import { validateCardlinkPayload } from "@/lib/payload-validator";
 
+export async function GET(req: NextRequest) {
+  const searchParams = Object.fromEntries(req.nextUrl.searchParams.entries());
+  return handlePaymentCallback(req, searchParams, true);
+}
+
 export async function POST(req: NextRequest) {
-  const start = performance.now();
   let payload: any = {};
   const contentType = req.headers.get("content-type") || "";
 
@@ -25,6 +29,15 @@ export async function POST(req: NextRequest) {
     payload = { error: err.message };
   }
 
+  // Check if request is direct API JSON call or user browser returning via POST form
+  const acceptHeader = req.headers.get("accept") || "";
+  const isBrowserRedirect = acceptHeader.includes("text/html");
+
+  return handlePaymentCallback(req, payload, isBrowserRedirect);
+}
+
+async function handlePaymentCallback(req: NextRequest, payload: Record<string, any>, isBrowserRedirect: boolean) {
+  const start = performance.now();
   const latencyMs = Math.round(performance.now() - start);
   const merchantId = req.headers.get("x-merchant-id") || payload.mid || "9000012429";
   const validation = validateCardlinkPayload(payload, "payment");
@@ -44,6 +57,15 @@ export async function POST(req: NextRequest) {
       endpoint: "/api/webhooks/cardlink/payment",
     }
   );
+
+  // If customer browser returning from Cardlink 3DS redirection, redirect them to dashboard/receipt
+  if (isBrowserRedirect) {
+    const statusParam = isSuccess ? "success" : "declined";
+    const orderId = payload.orderid || payload.orderId || "";
+    return NextResponse.redirect(
+      new URL(`/?orderId=${encodeURIComponent(orderId)}&paymentStatus=${statusParam}`, req.url)
+    );
+  }
 
   return NextResponse.json(
     {

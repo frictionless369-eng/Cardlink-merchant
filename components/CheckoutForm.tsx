@@ -203,22 +203,44 @@ export default function CheckoutForm() {
     e.preventDefault();
     if (paymentMode === 'keypad') return;
 
-    const response = await fetch('/api/cardlink', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-merchant-id': '9000012429'
-      },
-      body: JSON.stringify({
-        ...formData,
-        checkoutType,
-        amount: selectedRoom.price,
-        orderDesc: `Booking (${checkoutType.toUpperCase()}): ${selectedRoom.name}`,
-      }),
-    });
-    const result = await response.json();
-    if (result.redirectUrl) {
-      window.location.href = result.redirectUrl;
+    try {
+      const response = await fetch('/api/cardlink', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-merchant-id': '9000012429'
+        },
+        body: JSON.stringify({
+          ...formData,
+          checkoutType,
+          amount: selectedRoom.price,
+          orderDesc: `Booking (${checkoutType.toUpperCase()}): ${selectedRoom.name}`,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.endpointUrl && result.formFields) {
+        // Standard Cardlink POST redirection form submission
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = result.endpointUrl;
+        form.target = '_self';
+
+        Object.entries(result.formFields).forEach(([key, val]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(val);
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      } else if (result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+      }
+    } catch (err) {
+      console.error('Cardlink checkout redirection error:', err);
     }
   };
 
