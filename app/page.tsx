@@ -4,11 +4,9 @@ import Sidebar from '../components/dashboard/Sidebar';
 import TopBar from '../components/dashboard/TopBar';
 import { DashboardMetrics, TransactionTable } from '../components/dashboard/StatCards';
 import { ClearTransactionLogsButton } from '../components/dashboard/ClearTransactionLogsButton';
-import AuthGuard from '../components/dashboard/AuthGuard';
 
 export default function DashboardPage() {
   return (
-    <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
         <Sidebar />
         <div className="flex-1">
@@ -25,6 +23,5 @@ export default function DashboardPage() {
           </main>
         </div>
       </div>
-    </AuthGuard>
   );
 }

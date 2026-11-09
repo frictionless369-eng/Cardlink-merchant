@@ -7,7 +7,6 @@ import { OldschoolKeypad } from '@/components/dashboard/OldschoolKeypad';
 
 export default function PosTerminalPage() {
   return (
-    <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
         <Sidebar />
         <div className="flex-1">
@@ -23,6 +22,5 @@ export default function PosTerminalPage() {
           </main>
         </div>
       </div>
-    </AuthGuard>
   );
 }

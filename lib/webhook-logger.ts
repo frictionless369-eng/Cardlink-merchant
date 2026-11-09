@@ -20,7 +20,13 @@ export async function logWebhookEvent(
   payload: any,
   merchantId: string,
   status: "success" | "failure",
-  error?: string
+  error?: string,
+  extra?: {
+    statusCode?: number;
+    latencyMs?: number;
+    validation?: any;
+    endpoint?: string;
+  }
 ) {
   try {
     const rawData: Record<string, any> = {
@@ -29,6 +35,10 @@ export async function logWebhookEvent(
       event: event || "unknown",
       payload: payload ?? null,
       merchantId: merchantId || "unknown",
+      statusCode: extra?.statusCode ?? (status === "success" ? 200 : 400),
+      latencyMs: extra?.latencyMs,
+      validation: extra?.validation,
+      endpoint: extra?.endpoint,
     };
 
     if (error !== undefined && error !== null) {

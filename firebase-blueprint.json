@@ -22,7 +22,38 @@
         "balance": { "type": "number", "description": "Current settled balance" },
         "currency": { "type": "string", "description": "ISO currency code (e.g. USD, EUR)" },
         "cardlinkMerchantId": { "type": "string", "description": "Cardlink MID" },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "Last balance update" }
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last balance update" },
+        "payoutRecipient": {
+          "type": "object",
+          "description": "Recipient card or bank account details for settlement and funds transfer testing",
+          "properties": {
+            "type": { "type": "string", "enum": ["card", "bank"] },
+            "bankName": { "type": "string" },
+            "accountHolder": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "routingOrSwift": { "type": "string" },
+            "cardHolderName": { "type": "string" },
+            "cardNumber": { "type": "string" },
+            "cardExpiry": { "type": "string" },
+            "currency": { "type": "string" }
+          }
+        },
+        "payoutCredentials": {
+          "type": "object",
+          "description": "Production credentials for Visa Direct & Mastercard Send",
+          "properties": {
+            "visaApiKey": { "type": "string" },
+            "visaSharedSecret": { "type": "string" },
+            "mastercardConsumerKey": { "type": "string" },
+            "visaEnvironment": { "type": "string", "enum": ["sandbox", "production"] },
+            "mastercardEnvironment": { "type": "string", "enum": ["sandbox", "production"] }
+          }
+        },
+        "keytoolCertificates": {
+          "type": "array",
+          "description": "Installed TLS mutual authentication (mTLS) certificates promoted for Visa Direct and Mastercard Send production networks",
+          "items": { "type": "object" }
+        }
       },
       "required": ["id", "balance", "currency"]
     },
@@ -36,10 +67,12 @@
         "amount": { "type": "number", "description": "Transaction amount" },
         "currency": { "type": "string", "description": "ISO currency code" },
         "status": { "type": "string", "enum": ["Completed", "Pending", "Failed", "Cancelled"], "description": "Transaction status" },
-        "type": { "type": "string", "enum": ["payment", "capture", "cancel", "refund"], "description": "Ledger entry type" },
-        "entryMethod": { "type": "string", "enum": ["HOSTED_REDIRECT", "MANUAL_PAN_KEYPAD"], "description": "Payment capture method" },
+        "type": { "type": "string", "enum": ["payment", "capture", "cancel", "refund", "payout", "funds_transfer"], "description": "Ledger entry type" },
+        "entryMethod": { "type": "string", "enum": ["HOSTED_REDIRECT", "MANUAL_PAN_KEYPAD", "VISA_DIRECT_PUSH", "MASTERCARD_SEND_PUSH", "BANK_TRANSFER"], "description": "Payment capture or disbursement method" },
+        "gateway": { "type": "string", "description": "Acquiring or payout network (CARDLINK_VPOS, VISA_DIRECT, MASTERCARD_SEND)" },
         "cardBrand": { "type": "string", "description": "Card scheme (VISA, MASTERCARD, etc.)" },
         "maskedPan": { "type": "string", "description": "Masked PAN (last 4 digits)" },
+        "recipientName": { "type": "string", "description": "Name of the payout recipient" },
         "merchantId": { "type": "string", "description": "ID of the merchant" }
       },
       "required": ["id", "date", "amount", "status", "merchantId"]

@@ -6,6 +6,7 @@ import Link from 'next/link';
 export default function Sidebar() {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+    { name: 'Direct Payouts', icon: CreditCard, href: '/payouts' },
     { name: 'POS Keypad (PAN)', icon: Calculator, href: '/pos-terminal' },
     { name: 'Transactions', icon: ReceiptText, href: '/transactions' },
     { name: 'Webhook Logs', icon: Settings, href: '/webhook-logs' },

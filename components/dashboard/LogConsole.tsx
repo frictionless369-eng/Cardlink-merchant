@@ -18,6 +18,12 @@ interface CliEntry {
   errorCode?: string;
   error?: string;
   payload?: any;
+  validation?: {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+    digestVerified?: boolean | null;
+  };
 }
 
 export function LogConsole() {
@@ -30,17 +36,9 @@ export function LogConsole() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        setLogs([]);
-        setLoading(false);
-        return;
-      }
-
-      const q = query(collection(db, 'webhook_logs'));
-      const unsubscribe = onSnapshot(
-        q,
+    const q = query(collection(db, 'webhook_logs'));
+    const unsubscribe = onSnapshot(
+      q,
         (snapshot) => {
           const data: CliEntry[] = snapshot.docs
             .map((docItem) => {
@@ -59,6 +57,7 @@ export function LogConsole() {
                 errorCode: d.errorCode || (!isSuccess ? 'ERR_GATEWAY_CALLBACK' : undefined),
                 error: d.error,
                 payload: d.payload,
+                validation: d.validation,
               };
             })
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -70,9 +69,7 @@ export function LogConsole() {
           setLoading(false);
         }
       );
-      return () => unsubscribe();
-    });
-    return () => unsubscribeAuth();
+    return () => unsubscribe();
   }, []);
 
   const appendLocalLine = (entry: Omit<CliEntry, 'id' | 'timestamp'>) => {
@@ -348,7 +345,51 @@ export function LogConsole() {
                       {log.errorCode}
                     </span>
                   )}
+
+                  {log.validation && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                        log.validation.valid
+                          ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60'
+                          : 'bg-rose-950/60 text-rose-300 border-rose-800/60'
+                      }`}
+                    >
+                      {log.validation.valid ? '✓ VALIDATED' : '✕ INVALID PAYLOAD'}
+                    </span>
+                  )}
+
+                  {log.validation?.digestVerified !== undefined && log.validation?.digestVerified !== null && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                        log.validation.digestVerified
+                          ? 'bg-blue-950/60 text-blue-300 border-blue-800/60'
+                          : 'bg-amber-950/60 text-amber-300 border-amber-800/60'
+                      }`}
+                    >
+                      {log.validation.digestVerified ? 'DIGEST_OK' : 'DIGEST_MISMATCH'}
+                    </span>
+                  )}
                 </div>
+
+                {log.validation && log.validation.errors && log.validation.errors.length > 0 && (
+                  <div className="mt-1.5 pl-2 border-l-2 border-rose-500/70 space-y-0.5">
+                    {log.validation.errors.map((errItem, idx) => (
+                      <div key={idx} className="text-rose-400 text-[11px] font-mono">
+                        • Error: {errItem}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {log.validation && log.validation.warnings && log.validation.warnings.length > 0 && (
+                  <div className="mt-1 pl-2 border-l-2 border-amber-500/60 space-y-0.5">
+                    {log.validation.warnings.map((warnItem, idx) => (
+                      <div key={idx} className="text-amber-300/90 text-[10px] font-mono">
+                        ⚠ Warning: {warnItem}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {log.error && (
                   <div className="text-red-400 text-[11px] mt-1 pl-2 border-l-2 border-red-500/50">

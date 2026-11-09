@@ -8,7 +8,6 @@ import AuthGuard from '@/components/dashboard/AuthGuard';
 
 export default function TransactionsPage() {
   return (
-    <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
         <Sidebar />
         <div className="flex-1">
@@ -25,6 +24,5 @@ export default function TransactionsPage() {
           </main>
         </div>
       </div>
-    </AuthGuard>
   );
 }

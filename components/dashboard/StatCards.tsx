@@ -24,20 +24,10 @@ export function DashboardMetrics() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        setTotalRevenue(0);
-        setPendingCount(0);
-        setCompletedCount(0);
-        setLoading(false);
-        return;
-      }
-
-      // Real-time listener for live transaction metrics
-      const q = query(collection(db, 'transactions'));
-      const unsubscribeSnap = onSnapshot(
-        q,
+    // Real-time listener for live transaction metrics
+    const q = query(collection(db, 'transactions'));
+    const unsubscribeSnap = onSnapshot(
+      q,
         (snapshot) => {
           let revenueSum = 0;
           let pending = 0;
@@ -66,10 +56,7 @@ export function DashboardMetrics() {
         }
       );
 
-      return () => unsubscribeSnap();
-    });
-
-    return () => unsubscribeAuth();
+    return () => unsubscribeSnap();
   }, []);
 
   return (
@@ -97,34 +84,23 @@ export function TransactionTable() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        setTransactions([]);
+    const q = query(collection(db, 'transactions'));
+    const unsubscribeSnap = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        setTransactions(data);
         setLoading(false);
-        return;
+      },
+      (err) => {
+        console.error("Transactions snapshot error:", err);
+        setLoading(false);
       }
+    );
 
-      const q = query(collection(db, 'transactions'));
-      const unsubscribeSnap = onSnapshot(
-        q,
-        (snapshot) => {
-          const data = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-          setTransactions(data);
-          setLoading(false);
-        },
-        (err) => {
-          console.error("Transactions snapshot error:", err);
-          setLoading(false);
-        }
-      );
-
-      return () => unsubscribeSnap();
-    });
-
-    return () => unsubscribeAuth();
+    return () => unsubscribeSnap();
   }, []);
 
   if (loading) {
@@ -161,40 +137,76 @@ export function TransactionTable() {
                 </td>
               </tr>
             ) : (
-              transactions.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="px-6 py-4 font-mono font-medium text-slate-900">{t.id}</td>
-                  <td className="px-6 py-4 text-slate-600 text-xs">
-                    {t.date ? new Date(t.date).toLocaleString() : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-right font-mono tabular-nums font-semibold text-slate-900">
-                    ${typeof t.amount === 'number' ? t.amount.toFixed(2) : parseFloat(t.amount || '0').toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      t.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      t.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {t.status === 'Completed' ? (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenReceipt(t)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors rounded-lg border border-slate-200 shadow-2xs cursor-pointer"
-                        title="Generate Printable PDF Receipt"
+              transactions.map((t) => {
+                const statusNormalized = (t.status || '').toLowerCase().trim();
+                const isPendingOrAwaiting =
+                  statusNormalized === 'pending' ||
+                  statusNormalized === 'awaiting-capture' ||
+                  statusNormalized === 'awaiting_capture' ||
+                  statusNormalized === 'authorized';
+
+                return (
+                  <tr
+                    key={t.id}
+                    className={`transition-colors relative ${
+                      isPendingOrAwaiting
+                        ? 'bg-amber-50/50 hover:bg-amber-50/80 animate-pulse border-l-4 border-l-amber-500'
+                        : 'hover:bg-slate-50/80'
+                    }`}
+                  >
+                    <td className="px-6 py-4 font-mono font-medium text-slate-900">
+                      <div className="flex items-center gap-2">
+                        {isPendingOrAwaiting && (
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                          </span>
+                        )}
+                        <span>{t.id}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 text-xs">
+                      {t.date ? new Date(t.date).toLocaleString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right font-mono tabular-nums font-semibold text-slate-900">
+                      ${typeof t.amount === 'number' ? t.amount.toFixed(2) : parseFloat(t.amount || '0').toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          statusNormalized === 'completed' || statusNormalized === 'success'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : isPendingOrAwaiting
+                            ? 'bg-amber-100/90 text-amber-800 border border-amber-300 shadow-2xs'
+                            : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}
                       >
-                        <FileText size={13} className="text-slate-500" />
-                        <span>Download Receipt</span>
-                      </button>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">N/A</span>
-                    )}
-                  </td>
-                </tr>
-              ))
+                        {isPendingOrAwaiting && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-600 animate-ping"></span>
+                        )}
+                        {t.status === 'Completed' ? 'Success' : t.status || 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {statusNormalized === 'completed' || statusNormalized === 'success' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReceipt(t)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors rounded-lg border border-slate-200 shadow-2xs cursor-pointer"
+                          title="Generate Printable PDF Receipt"
+                        >
+                          <FileText size={13} className="text-slate-500" />
+                          <span>Download Receipt</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-amber-600/80 font-medium font-mono">
+                          {isPendingOrAwaiting ? 'Processing...' : 'N/A'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
